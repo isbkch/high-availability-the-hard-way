@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -33,8 +31,13 @@ services:
       - "8474:8474"
       - "8666:8666"
     volumes:
-      - ./shared/scripts/toxiproxy-config.json:/config/toxiproxy.json
+      - ./scripts/toxiproxy-config.json:/config/toxiproxy.json
     command: "-config /config/toxiproxy.json"
+    healthcheck:
+      test: ["CMD", "toxiproxy-cli", "-h", "localhost:8474", "list"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   mock-llm:
     image: ghcr.io/openai/openai-python-demo-server:latest
@@ -53,11 +56,16 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./shared/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   grafana:
     image: grafana/grafana:latest
@@ -69,8 +77,13 @@ services:
       GF_USERS_ALLOW_SIGN_UP: false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./shared/grafana/provisioning:/etc/grafana/provisioning
-      - ./shared/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:

@@ -40,12 +40,24 @@ wait_for_service() {
     local host=$1
     local port=$2
     local service_name=$3
+    local timeout_seconds=${4:-60}
+    local start_ts
+    local now_ts
 
     log_info "Waiting for $service_name ($host:$port)..."
-    if timeout 60 bash -c "until cat < /dev/null > /dev/tcp/$host/$port 2>&1; do sleep 1; done"; then
-        log_info "$service_name is ready!"
-    else
-        log_error "$service_name failed to start within 60 seconds"
-        exit 1
-    fi
+    start_ts=$(date +%s)
+    while true; do
+        if (echo > "/dev/tcp/$host/$port") >/dev/null 2>&1; then
+            log_info "$service_name is ready!"
+            return 0
+        fi
+
+        now_ts=$(date +%s)
+        if [[ $((now_ts - start_ts)) -ge "$timeout_seconds" ]]; then
+            log_error "$service_name failed to start within $timeout_seconds seconds"
+            exit 1
+        fi
+
+        sleep 1
+    done
 }
