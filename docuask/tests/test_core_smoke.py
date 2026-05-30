@@ -33,3 +33,17 @@ def test_models_and_schemas_import_with_expected_defaults():
     assert chunk.document_id == 1
     assert create_request.title == "Runbook"
     assert question_request.document_id is None
+
+
+def test_database_exposes_async_session_maker_for_workers():
+    """Workers should be able to import the planned session factory name."""
+    from docuask import database
+
+    assert callable(database.async_session_maker)
+
+
+def test_document_status_enum_uses_lowercase_storage_values():
+    """Database enum labels should match the public API status values."""
+    status_type = Document.__table__.c.status.type
+
+    assert status_type.enums == ["pending", "processing", "completed", "failed"]

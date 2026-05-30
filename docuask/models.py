@@ -33,7 +33,11 @@ class Document(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[DocumentStatus] = mapped_column(
-        SQLEnum(DocumentStatus, name="document_status"),
+        SQLEnum(
+            DocumentStatus,
+            name="document_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=DocumentStatus.PENDING,
         nullable=False,
     )

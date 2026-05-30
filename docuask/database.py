@@ -14,12 +14,10 @@ class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
 
 
-settings = get_settings()
-
-
 @lru_cache
 def get_engine():
     """Return the lazily-created async SQLAlchemy engine."""
+    settings = get_settings()
     return create_async_engine(
         settings.database_url or settings.generate_database_url(),
         echo=False,
@@ -35,6 +33,11 @@ def get_session_maker() -> async_sessionmaker[AsyncSession]:
         class_=AsyncSession,
         expire_on_commit=False,
     )
+
+
+def async_session_maker() -> AsyncSession:
+    """Return a database session for worker code using the planned public name."""
+    return get_session_maker()()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
