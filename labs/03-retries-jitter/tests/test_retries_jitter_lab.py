@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
+from types import ModuleType
 
+import pytest
 import yaml
 
 
@@ -13,6 +16,18 @@ LAB_DIR = Path(__file__).resolve().parents[1]
 
 def read(path: str) -> str:
     return (LAB_DIR / path).read_text()
+
+
+def load_mock_server() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "lab3_mock_llm_server",
+        LAB_DIR / "mock-llm/server.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_before_client_retries_immediately_without_sleep_or_backoff() -> None:
@@ -80,13 +95,17 @@ def test_scripts_use_common_helpers_compose_fallback_and_failure_controls() -> N
     load = read("scripts/load-test.sh")
 
     assert "/control/failure-mode" in break_script
-    assert 'FAILURE_MODE="${FAILURE_MODE:-alternating_503}"' in break_script
+    assert 'FAILURE_MODE="${FAILURE_MODE:-brownout_503}"' in break_script
+    assert "BROWNOUT_SECONDS" in break_script
     assert '\\"mode\\"' in break_script
     assert "/control/reset" in reset_script
     assert "before/docuask/api/dependencies/llm.py" in reset_script
-    assert "retry_budget_exceeded_count" in load
-    assert "retry_storm_status_count" in load
+    assert "configure_failure_window" in load
+    assert 'FAILURE_MODE="${FAILURE_MODE:-brownout_503}"' in load
+    assert "BROWNOUT_SECONDS" in load
+    assert "failed_response_count" in load
     assert "http_code" in load
+    assert "500|503" not in load
 
 
 def test_smoke_and_load_tests_use_current_api_routes() -> None:
@@ -112,8 +131,38 @@ def test_mock_llm_has_deterministic_intermitent_503_controls() -> None:
     assert "/control/reset" in server
     assert "alternating_503" in server
     assert "every_nth_503" in server
+    assert "brownout_503" in server
     assert "request_counter" in server
     assert "503" in server
+
+
+def test_mock_llm_brownout_mode_models_transient_outage_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    server = load_mock_server()
+    current_time = [100.0]
+
+    class FakeTime:
+        @staticmethod
+        def monotonic() -> float:
+            return current_time[0]
+
+    monkeypatch.setattr(server, "time", FakeTime, raising=False)
+
+    server.set_failure_mode(
+        {
+            "mode": "brownout_503",
+            "every_n": 2,
+            "brownout_seconds": 0.4,
+        }
+    )
+
+    assert server.should_fail_request() is True
+    assert server.snapshot_state()["failure_counter"] == 1
+
+    current_time[0] += 0.5
+
+    assert server.should_fail_request() is False
+    assert server.snapshot_state()["request_counter"] == 2
+    assert server.snapshot_state()["failure_counter"] == 1
 
 
 def test_runtime_pytests_exist_for_before_and_after_contracts() -> None:
@@ -122,10 +171,19 @@ def test_runtime_pytests_exist_for_before_and_after_contracts() -> None:
 
     assert "RUN_LAB_RUNTIME_TESTS" in before_test
     assert "retry storm" in before_test
-    assert "assert response.status_code" in before_test
+    assert "/api/documents" in before_test
+    assert "/control/failure-mode" in before_test
+    assert "/mock-state" in before_test
+    assert "document_id" in before_test
+    assert "assert response.status_code != 200" in before_test
     assert "MAX_ALLOWED_SECONDS" in after_test
     assert "retry budget" in after_test
-    assert "assert elapsed" in after_test
+    assert "/api/documents" in after_test
+    assert "/control/failure-mode" in after_test
+    assert "/mock-state" in after_test
+    assert "document_id" in after_test
+    assert "assert response.status_code == 200" in after_test
+    assert "failure_counter" in after_test
 
 
 def test_docs_and_dashboard_describe_retries_jitter_lab() -> None:
@@ -136,7 +194,8 @@ def test_docs_and_dashboard_describe_retries_jitter_lab() -> None:
 
     assert "make break" in readme
     assert "make apply-fix" in readme
-    assert "alternating 503" in readme
+    assert "brownout_503" in readme
+    assert "alternating_503" in readme
     assert "retry storm" in architecture
     assert "exponential backoff" in architecture
     assert "Root Cause" in reflection

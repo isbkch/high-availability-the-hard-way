@@ -2,7 +2,7 @@
 
 ## Before
 
-With the before implementation, DocuAsk retries LLM failures immediately. The attempt count is bounded, so a single request cannot loop forever, but several concurrent callers can still retry at the same moments. When `make break` enables alternating 503s, those synchronized retries amplify traffic to a dependency that is already unhealthy.
+With the before implementation, DocuAsk retries LLM failures immediately. The attempt count is bounded, so a single request cannot loop forever, but every attempt lands inside the same short dependency brownout. When `make load-test` restarts that brownout for each request, the before client spends the whole retry budget before the mock LLM recovers.
 
 ## After
 
@@ -16,6 +16,7 @@ Immediate retries cause:
 
 - extra work on an already unhealthy dependency;
 - synchronized retry waves across API requests and worker jobs;
+- failures that would have recovered if later attempts had waited;
 - noisy failure behavior that hides the first cause;
 - higher tail latency even when every individual request has a bounded attempt count.
 

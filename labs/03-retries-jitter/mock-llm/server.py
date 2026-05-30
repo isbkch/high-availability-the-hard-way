@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -12,6 +13,8 @@ STATE = {
     "request_counter": 0,
     "failure_counter": 0,
     "every_n": 2,
+    "brownout_seconds": 0.45,
+    "mode_started_at": time.monotonic(),
 }
 STATE_LOCK = threading.Lock()
 
@@ -37,6 +40,9 @@ def should_fail_request() -> bool:
             failed = counter % 2 == 1
         elif mode == "every_nth_503":
             failed = counter % every_n == 0
+        elif mode == "brownout_503":
+            elapsed = time.monotonic() - float(STATE.get("mode_started_at", 0.0))
+            failed = elapsed < float(STATE.get("brownout_seconds", 0.45))
         if failed:
             STATE["failure_counter"] += 1
         return failed
@@ -50,13 +56,16 @@ def snapshot_state() -> dict:
 def set_failure_mode(payload: dict) -> None:
     mode = payload.get("mode", "healthy")
     every_n = int(payload.get("every_n", 2))
-    if mode not in {"healthy", "alternating_503", "every_nth_503"}:
+    brownout_seconds = float(payload.get("brownout_seconds", 0.45))
+    if mode not in {"healthy", "alternating_503", "every_nth_503", "brownout_503"}:
         raise ValueError(f"unsupported failure mode: {mode}")
     with STATE_LOCK:
         STATE["mode"] = mode
         STATE["request_counter"] = 0
         STATE["failure_counter"] = 0
         STATE["every_n"] = max(every_n, 1)
+        STATE["brownout_seconds"] = max(brownout_seconds, 0.0)
+        STATE["mode_started_at"] = time.monotonic()
 
 
 class Handler(BaseHTTPRequestHandler):
