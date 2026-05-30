@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docuask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docuask_password}
+      POSTGRES_DB: ${POSTGRES_DB:-docuask}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docuask}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.5.0
+    ports:
+      - "8474:8474"
+      - "8666:8666"
+    volumes:
+      - ./shared/scripts/toxiproxy-config.json:/config/toxiproxy.json
+    command: "-config /config/toxiproxy.json"
+
+  mock-llm:
+    image: ghcr.io/openai/openai-python-demo-server:latest
+    ports:
+      - "8888:8888"
+    environment:
+      OPENAI_API_KEY: ${LLM_API_KEY:-sk-mock}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./shared/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./shared/grafana/provisioning:/etc/grafana/provisioning
+      - ./shared/grafana/dashboards:/var/lib/grafana/dashboards
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
