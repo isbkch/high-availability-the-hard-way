@@ -1,0 +1,142 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      LLM_API_KEY: sk-mock
+      LLM_API_BASE: http://mock-llm:8888/v1
+      LLM_MODEL: baseline-mock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-llm:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+    command:
+      - python
+      - -m
+      - docuask.worker.main
+      - docuask.worker.tasks
+      - --processes
+      - "2"
+      - --threads
+      - "2"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      LLM_API_KEY: sk-mock
+      LLM_API_BASE: http://mock-llm:8888/v1
+      LLM_MODEL: baseline-mock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-llm:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuask -d docuask"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
+  mock-llm:
+    image: python:3.11-slim
+    working_dir: /app
+    command: ["python", "/app/server.py"]
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./mock-llm:/app:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8888/v1/models', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    ports:
+      - "9115:9115"
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    depends_on:
+      blackbox:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
