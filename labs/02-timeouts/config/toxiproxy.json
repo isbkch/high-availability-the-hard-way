@@ -1,0 +1,8 @@
+[
+  {
+    "name": "mock-llm",
+    "listen": "0.0.0.0:8666",
+    "upstream": "mock-llm:8888",
+    "enabled": true
+  }
+]

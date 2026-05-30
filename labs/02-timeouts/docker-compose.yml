@@ -1,0 +1,175 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      LLM_API_KEY: sk-mock
+      LLM_API_BASE: http://toxiproxy:8666/v1
+      LLM_MODEL: timeout-mock
+    volumes:
+      - ../../docuask:/app/docuask
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+    command:
+      - python
+      - -m
+      - docuask.worker.main
+      - docuask.worker.tasks
+      - --processes
+      - "2"
+      - --threads
+      - "2"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      LLM_API_KEY: sk-mock
+      LLM_API_BASE: http://toxiproxy:8666/v1
+      LLM_MODEL: timeout-mock
+    volumes:
+      - ../../docuask:/app/docuask
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os, pathlib, sys;
+          sys.exit(0 if any(
+          pid.name != str(os.getpid()) and
+          'python' in (cmd := pid.joinpath('cmdline').read_text(errors='ignore').replace('\0', ' ')) and
+          'docuask.worker.main' in cmd and
+          'docuask.worker.tasks' in cmd
+          for pid in pathlib.Path('/proc').glob('[0-9]*')
+          ) else 1)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: docuask
+      POSTGRES_PASSWORD: docuask_password
+      POSTGRES_DB: docuask
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuask -d docuask"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
+  mock-llm:
+    image: python:3.11-slim
+    working_dir: /app
+    command: ["python", "/app/server.py"]
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./mock-llm:/app:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8888/v1/models', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    command:
+      - -host=0.0.0.0
+      - -config=/config/toxiproxy.json
+    ports:
+      - "8474:8474"
+      - "8666:8666"
+    volumes:
+      - ./config/toxiproxy.json:/config/toxiproxy.json:ro
+    depends_on:
+      mock-llm:
+        condition: service_healthy
+
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    ports:
+      - "9115:9115"
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    depends_on:
+      blackbox:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
