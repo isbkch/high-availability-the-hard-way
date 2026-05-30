@@ -44,13 +44,22 @@ def configure_broker() -> Any | None:
     if _broker is None:
         broker = RedisBroker(url=get_settings().redis_url)
         if Prometheus is not None:
-            broker.add_middleware(Prometheus())
+            _add_middleware_once(broker, Prometheus())
         if TimeLimit is not None:
-            broker.add_middleware(TimeLimit(time_limit=300_000))
+            _add_middleware_once(broker, TimeLimit(time_limit=300_000))
         dramatiq.set_broker(broker)
         _broker = broker
 
     return _broker
+
+
+def _add_middleware_once(broker: Any, middleware: Any) -> None:
+    """Add middleware unless an equivalent middleware is already configured."""
+    middleware_name = middleware.__class__.__name__
+    for existing in getattr(broker, "middleware", []):
+        if existing == middleware or existing.__class__.__name__ == middleware_name:
+            return
+    broker.add_middleware(middleware)
 
 
 def actor(fn: Callable[..., Any]) -> Any:

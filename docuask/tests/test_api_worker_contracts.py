@@ -93,7 +93,7 @@ def test_worker_tasks_configures_redis_broker_before_actor_import(monkeypatch):
     class RedisBroker:
         def __init__(self, url):
             self.url = url
-            self.middleware = []
+            self.middleware = ["prometheus", ("time_limit", 300_000)]
 
         def add_middleware(self, middleware):
             self.middleware.append(middleware)
@@ -113,6 +113,8 @@ def test_worker_tasks_configures_redis_broker_before_actor_import(monkeypatch):
 
     assert fake_dramatiq.broker_configured is True
     assert fake_dramatiq.actor_saw_configured_broker is True
+    broker = sys.modules["docuask.worker.broker"]._broker
+    assert broker.middleware == ["prometheus", ("time_limit", 300_000)]
 
 
 def test_requirements_pin_available_dramatiq_version():
