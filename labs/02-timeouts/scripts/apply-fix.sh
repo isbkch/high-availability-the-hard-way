@@ -20,6 +20,8 @@ compose() {
 log_info "Applying explicit LLM timeout implementation"
 cp "$LAB_DIR/after/docuask/api/dependencies/llm.py" \
     "$ROOT_DIR/docuask/api/dependencies/llm.py"
+cp "$LAB_DIR/after/docuask/worker/tasks.py" \
+    "$ROOT_DIR/docuask/worker/tasks.py"
 
 cd "$LAB_DIR"
 compose restart api worker

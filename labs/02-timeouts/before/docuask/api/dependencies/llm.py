@@ -28,7 +28,7 @@ class LLMClient:
             "model": "text-embedding-3-small",
             "input": texts,
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             response = await client.post(
                 self._url("/embeddings"),
                 headers=self._headers(),
@@ -57,7 +57,7 @@ class LLMClient:
                 },
             ],
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             response = await client.post(
                 self._url("/chat/completions"),
                 headers=self._headers(),
@@ -73,7 +73,7 @@ class LLMClient:
     async def health(self) -> str:
         """Return health status for the configured LLM endpoint."""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=None) as client:
                 response = await client.get(self._url("/models"), headers=self._headers())
             return "healthy" if 200 <= response.status_code < 400 else "unhealthy"
         except Exception:

@@ -18,9 +18,21 @@ def read(path: str) -> str:
 def test_before_client_has_no_explicit_httpx_timeout() -> None:
     before = read("before/docuask/api/dependencies/llm.py")
 
-    assert "httpx.AsyncClient()" in before
-    assert "timeout=" not in before
+    assert "httpx.AsyncClient(timeout=None)" in before
     assert "httpx.Timeout" not in before
+
+
+def test_worker_before_after_artifacts_are_present() -> None:
+    before_worker = read("before/docuask/worker/tasks.py")
+    after_worker = read("after/docuask/worker/tasks.py")
+    apply_fix = read("scripts/apply-fix.sh")
+    reset = read("scripts/reset.sh")
+
+    assert "httpx.AsyncClient(timeout=None)" in before_worker
+    assert "httpx.Timeout(" in after_worker
+    assert "after/docuask/worker/tasks.py" in apply_fix
+    assert "before/docuask/worker/tasks.py" in reset
+    assert "httpx.Timeout" not in before_worker
 
 
 def test_after_client_uses_explicit_timeout_budget() -> None:
@@ -78,6 +90,18 @@ def test_smoke_and_load_tests_use_current_api_routes() -> None:
     assert "/api/health" in load
     assert "/api/questions" in load
     assert "MAX_ALLOWED_SECONDS" in load
+    assert "bad_status_count" in load
+    assert "http_code" in load
+
+
+def test_runtime_pytests_exist_for_before_and_after_contracts() -> None:
+    before_test = read("tests/test_failure_before.py")
+    after_test = read("tests/test_resilience_after.py")
+
+    assert "LATENCY_MS" in before_test
+    assert "assert elapsed" in before_test
+    assert "MAX_ALLOWED_SECONDS" in after_test
+    assert "assert response.status_code" in after_test
 
 
 def test_docs_and_dashboard_describe_timeout_lab() -> None:
@@ -90,5 +114,9 @@ def test_docs_and_dashboard_describe_timeout_lab() -> None:
     assert "make apply-fix" in readme
     assert "Toxiproxy" in architecture
     assert "connect/read/write/pool" in architecture
+    assert "Root Cause" in reflection
+    assert "Production Checklist" in reflection
+    assert "Before" in reflection
+    assert "After" in reflection
     assert "bounded latency" in reflection
     assert dashboard["title"] == "DocuAsk Lab 2 - Timeouts"

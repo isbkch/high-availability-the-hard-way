@@ -55,6 +55,7 @@ done
 log_info "Document $DOC_ID processing status: $DOC_STATUS"
 
 slow_count=0
+bad_status_count=0
 for index in $(seq 1 "$REQUESTS"); do
     result="$(
         curl -sS -o /tmp/docuask-lab2-load-response.json \
@@ -66,10 +67,21 @@ for index in $(seq 1 "$REQUESTS"); do
     http_code="${result%% *}"
     duration="${result##* }"
     log_info "request=$index status=$http_code duration=${duration}s"
+    case "$http_code" in
+        200|500|503) ;;
+        *)
+            bad_status_count=$((bad_status_count + 1))
+            ;;
+    esac
     if ! compare_seconds "$duration" "$MAX_ALLOWED_SECONDS"; then
         slow_count=$((slow_count + 1))
     fi
 done
+
+if [[ "$bad_status_count" -gt 0 ]]; then
+    log_error "$bad_status_count request(s) returned an unexpected HTTP status"
+    exit 1
+fi
 
 if [[ "$slow_count" -gt 0 ]]; then
     log_error "$slow_count request(s) exceeded ${MAX_ALLOWED_SECONDS}s"

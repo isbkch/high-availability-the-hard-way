@@ -22,6 +22,8 @@ compose() {
 copy_impl() {
     cp "$LAB_DIR/before/docuask/api/dependencies/llm.py" \
         "$ROOT_DIR/docuask/api/dependencies/llm.py"
+    cp "$LAB_DIR/before/docuask/worker/tasks.py" \
+        "$ROOT_DIR/docuask/worker/tasks.py"
 }
 
 remove_latency() {
