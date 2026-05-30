@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Lab Dashboards
+    orgId: 1
+    folder: High Availability The Hard Way
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
