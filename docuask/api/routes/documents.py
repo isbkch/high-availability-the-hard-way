@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from docuask.database import get_db
-from docuask.models import Document
+from docuask.models import Document, DocumentStatus
 from docuask.schemas import DocumentCreate, DocumentResponse
 from docuask.worker.tasks import process_document
 
@@ -24,7 +24,16 @@ async def create_document(
     db.add(document)
     await db.commit()
     await db.refresh(document)
-    process_document.send(document.id)
+    try:
+        process_document.send(document.id)
+    except Exception as exc:
+        document.status = DocumentStatus.FAILED
+        document.error_message = f"Failed to enqueue document: {exc}"[:1000]
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document was saved but could not be queued for processing",
+        ) from exc
     return document
 
 

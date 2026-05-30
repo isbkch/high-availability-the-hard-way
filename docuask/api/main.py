@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
 
-from docuask.api.middleware.telemetry import configure_telemetry
+from docuask.api.middleware.observability import instrument_app
 from docuask.api.routes import documents, health, questions
 from docuask.database import close_db, init_db
 
@@ -23,7 +23,17 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="DocuAsk", version="0.1.0", lifespan=lifespan)
-app.include_router(health.router)
-app.include_router(documents.router)
-app.include_router(questions.router)
-configure_telemetry(app)
+app.include_router(health.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
+app.include_router(questions.router, prefix="/api")
+instrument_app(app)
+
+
+@app.get("/")
+async def root() -> dict[str, str]:
+    """Return basic service metadata."""
+    return {
+        "name": "DocuAsk",
+        "purpose": "AI document Q&A for reliability labs",
+        "docs": "/docs",
+    }

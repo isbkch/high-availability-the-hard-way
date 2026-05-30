@@ -1,4 +1,4 @@
-dramatiq==1.14.3
+dramatiq==1.15.0
 redis==5.0.1
 sqlalchemy==2.0.25
 asyncpg==0.29.0

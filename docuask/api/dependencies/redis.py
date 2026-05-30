@@ -9,4 +9,9 @@ from docuask.config import get_settings
 
 def get_redis_client() -> Redis:
     """Return a lazily-created Redis client."""
-    return Redis.from_url(get_settings().redis_url)
+    return Redis.from_url(
+        get_settings().redis_url,
+        socket_connect_timeout=1.0,
+        socket_timeout=1.0,
+        health_check_interval=30,
+    )

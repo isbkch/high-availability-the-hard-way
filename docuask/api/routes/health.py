@@ -20,28 +20,29 @@ async def health(
     llm: LLMClient = Depends(get_llm_client),
 ) -> HealthResponse:
     """Report database, Redis, and LLM dependency status."""
-    database_status = "ok"
-    redis_status = "ok"
+    database_status = "healthy"
+    redis_status = "healthy"
 
     try:
         await db.execute(text("SELECT 1"))
     except Exception:
-        database_status = "error"
+        database_status = "unhealthy"
 
     redis_client = get_redis_client()
     try:
         await redis_client.ping()
     except Exception:
-        redis_status = "error"
+        redis_status = "unhealthy"
     finally:
         await redis_client.aclose()
 
     llm_status = await llm.health()
-    status = (
-        "ok"
-        if database_status == redis_status == llm_status == "ok"
-        else "degraded"
-    )
+    if database_status == redis_status == llm_status == "healthy":
+        status = "healthy"
+    elif database_status == "unhealthy" or redis_status == "unhealthy":
+        status = "unhealthy"
+    else:
+        status = "degraded"
     return HealthResponse(
         status=status,
         database=database_status,

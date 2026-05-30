@@ -76,9 +76,9 @@ class LLMClient:
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
                 response = await client.get(self._url("/models"), headers=self._headers())
-            return "ok" if response.status_code < 500 else "error"
+            return "healthy" if 200 <= response.status_code < 400 else "unhealthy"
         except Exception:
-            return "error"
+            return "unhealthy"
 
 
 async def get_llm_client() -> LLMClient:

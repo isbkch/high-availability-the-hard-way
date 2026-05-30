@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
 
 from sqlalchemy import delete
 
@@ -12,33 +11,9 @@ from docuask import database
 from docuask.api.dependencies.llm import embed_texts
 from docuask.models import Document, DocumentChunk, DocumentStatus
 from docuask.vector.store import encode_embedding
+from docuask.worker.broker import actor
 
 logger = logging.getLogger(__name__)
-
-try:
-    import dramatiq
-except ImportError:  # pragma: no cover - used in lightweight local test envs
-    dramatiq = None
-
-
-class _InlineActor:
-    """Small fallback with the actor API used by tests and the API route."""
-
-    def __init__(self, fn: Callable[[int], None]):
-        self.fn = fn
-
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
-
-    def send(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
-
-
-def _actor(fn: Callable[[int], None]):
-    if dramatiq is None:
-        return _InlineActor(fn)
-    return dramatiq.actor(fn)
-
 
 def chunk_text(text: str, *, chunk_size: int = 3000, overlap: int = 200) -> list[str]:
     """Split text into overlapping chunks."""
@@ -97,7 +72,7 @@ async def process_document_async(document_id: int) -> None:
             raise
 
 
-@_actor
+@actor
 def process_document(document_id: int) -> None:
     """Dramatiq actor wrapper for document processing."""
     asyncio.run(process_document_async(document_id))

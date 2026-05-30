@@ -2,24 +2,25 @@
 
 from __future__ import annotations
 
-from docuask.config import get_settings
+import sys
 
-try:
-    import dramatiq
-    from dramatiq.brokers.redis import RedisBroker
-except ImportError:  # pragma: no cover - allows import smoke tests without extras
-    dramatiq = None
-    RedisBroker = None
-
-
-def configure_broker() -> None:
-    """Configure the Redis broker for Dramatiq."""
-    if dramatiq is None or RedisBroker is None:
-        return
-    broker = RedisBroker(url=get_settings().redis_url)
-    dramatiq.set_broker(broker)
+from docuask.worker.broker import configure_broker
 
 
 configure_broker()
 
 from docuask.worker.tasks import process_document  # noqa: E402,F401
+
+
+def main() -> None:
+    """Run the Dramatiq CLI for the DocuAsk worker module."""
+    configure_broker()
+    from dramatiq.cli import main as dramatiq_main
+
+    if len(sys.argv) == 1:
+        sys.argv.append("docuask.worker.tasks")
+    dramatiq_main()
+
+
+if __name__ == "__main__":
+    main()
