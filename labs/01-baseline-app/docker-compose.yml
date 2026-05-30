@@ -53,6 +53,21 @@ services:
         condition: service_healthy
       mock-llm:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os, pathlib, sys;
+          sys.exit(0 if any(
+          pid.name != str(os.getpid()) and
+          'python' in (cmd := pid.joinpath('cmdline').read_text(errors='ignore').replace('\0', ' ')) and
+          'docuask.worker.main' in cmd and
+          'docuask.worker.tasks' in cmd
+          for pid in pathlib.Path('/proc').glob('[0-9]*')
+          ) else 1)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   postgres:
     image: pgvector/pgvector:pg16

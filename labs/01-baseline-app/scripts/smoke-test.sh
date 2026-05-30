@@ -20,6 +20,18 @@ print(payload)
 PY
 }
 
+json_len() {
+    python3 - "$1" "$2" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+for part in sys.argv[2].split("."):
+    payload = payload[part]
+print(len(payload))
+PY
+}
+
 require_label() {
     case "$1" in
         healthy|degraded|unhealthy) ;;
@@ -82,16 +94,27 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
     sleep 1
 done
 
+if [[ "$DOC_STATUS" != "completed" ]]; then
+    log_error "Document $DOC_ID was not processed by the worker. Last status: $DOC_STATUS"
+    exit 1
+fi
+log_info "Worker processed document $DOC_ID"
+
 QUESTION_RESPONSE="$(
     curl -fsS -X POST "$API_URL/api/questions" \
         -H "Content-Type: application/json" \
-        -d '{"question":"What do the baseline smoke tests verify?"}'
+        -d "{\"question\":\"What do the baseline smoke tests verify?\",\"document_id\":$DOC_ID}"
 )"
 ANSWER="$(json_field "$QUESTION_RESPONSE" answer)"
+SOURCE_COUNT="$(json_len "$QUESTION_RESPONSE" sources)"
 
 if [[ -z "$ANSWER" ]]; then
     log_error "Question response did not include an answer: $QUESTION_RESPONSE"
     exit 1
 fi
-log_info "Question answering returned an answer"
+if [[ "$SOURCE_COUNT" -lt 1 ]]; then
+    log_error "Question response did not include processed document sources: $QUESTION_RESPONSE"
+    exit 1
+fi
+log_info "Question answering returned an answer with processed document sources"
 log_info "All Lab 1 smoke tests passed"

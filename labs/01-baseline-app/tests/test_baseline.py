@@ -29,6 +29,7 @@ def test_compose_uses_current_docuask_contract() -> None:
         "--threads",
         "2",
     ]
+    assert "healthcheck" in services["worker"]
     assert services["mock-llm"]["image"] == "python:3.11-slim"
     assert services["mock-llm"]["command"] == ["python", "/app/server.py"]
 
@@ -66,6 +67,16 @@ def test_scripts_source_common_with_lab_relative_path() -> None:
         if "compose()" in text:
             assert "docker compose" in text
             assert "docker-compose" in text
+
+
+def test_startup_and_smoke_test_prove_worker_processing() -> None:
+    up_script = (LAB_DIR / "scripts" / "up.sh").read_text()
+    smoke_script = (LAB_DIR / "scripts" / "smoke-test.sh").read_text()
+
+    assert "worker container is running" in up_script
+    assert 'DOC_STATUS" != "completed"' in smoke_script
+    assert "document_id" in smoke_script
+    assert "sources" in smoke_script
 
 
 def test_docs_describe_real_api_routes_and_health_labels() -> None:
