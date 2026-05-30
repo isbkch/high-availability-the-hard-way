@@ -54,3 +54,4 @@ dist/
 # Temporary
 *.tmp
 *.bak
+TASKS-private.md
