@@ -1,0 +1,168 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const labs = [
+  {
+    number: "1",
+    title: "Baseline App",
+    path: "labs/01-baseline-app",
+    accent: "accent-blue",
+    failure: "No injected failure",
+    lesson: "Learn DocuAsk, the worker path, health states, Prometheus, and Grafana."
+  },
+  {
+    number: "2",
+    title: "Timeouts",
+    path: "labs/02-timeouts",
+    accent: "accent-red",
+    failure: "Slow LLM dependency",
+    lesson: "Add explicit httpx timeout budgets to API and worker calls."
+  },
+  {
+    number: "3",
+    title: "Retries + Jitter",
+    path: "labs/03-retries-jitter",
+    accent: "accent-green",
+    failure: "Transient LLM 503 brownout",
+    lesson: "Use bounded retries, retryable statuses, exponential backoff, and jitter."
+  }
+];
+
+const pillars = [
+  {
+    title: "GitHub repository is the source of truth",
+    body: "All claims resolve back to runnable labs, before/after code, tests, dashboards, and scripts."
+  },
+  {
+    title: "Companion site organizes the journey",
+    body: "The site is the table of contents for the course, not a replacement for the repo."
+  },
+  {
+    title: "YouTube is the acquisition engine",
+    body: "Videos carry the narrative and send learners back to code they can inspect."
+  }
+];
+---
+
+<Layout>
+  <main>
+    <section class="topline">
+      <div class="shell overview">
+        <div>
+          <p class="kicker">Runnable reliability labs</p>
+          <h1>High Availability The Hard Way</h1>
+          <p class="lede">
+            A course index for learning production readiness by breaking DocuAsk, a small AI document
+            Q&A system with real API, worker, database, queue, LLM, Prometheus, and Grafana surfaces.
+          </p>
+          <div class="loop">Break it -> Observe it -> Understand it -> Fix it -> Prove it</div>
+        </div>
+
+        <figure class="map-panel">
+          <img
+            src="/system-map.svg"
+            alt="DocuAsk lab topology showing API, worker, Redis, Postgres, mock LLM, Prometheus, and Grafana"
+          />
+          <figcaption>
+            DocuAsk keeps the application small enough to run locally while preserving the reliability
+            boundaries that matter in AI-native systems.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Day 1 Lab Set</h2>
+          <p>
+            Start with the baseline, then run the two failure labs. Each path uses the same command
+            rhythm so the difference is the failure mode, not setup ceremony.
+          </p>
+        </div>
+
+        <div class="lab-grid">
+          {
+            labs.map((lab) => (
+              <article class={`card lab-card ${lab.accent}`}>
+                <span class="lab-number">{lab.number}</span>
+                <div>
+                  <strong>{lab.title}</strong>
+                  <p>{lab.failure}</p>
+                </div>
+                <p>{lab.lesson}</p>
+                <code>{lab.path}</code>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="shell command-grid">
+        <div class="section-head">
+          <h2>Workshop Rhythm</h2>
+          <p>
+            Lab 1 proves the happy path. Lab 2 and Lab 3 use the same before/after proof loop.
+          </p>
+        </div>
+
+        <pre class="terminal"><code>cd labs/02-timeouts
+make up
+make smoke-test
+make break
+make load-test
+make apply-fix
+make load-test
+make reset</code></pre>
+      </div>
+    </section>
+
+    <section class="band dark">
+      <div class="shell">
+        <div class="section-head">
+          <h2>System Surfaces</h2>
+          <p>
+            The course uses one app repeatedly so learners build intuition instead of relearning a new
+            demo for every reliability topic.
+          </p>
+        </div>
+
+        <ul class="status-line" aria-label="DocuAsk system surfaces">
+          <li>FastAPI</li>
+          <li>Dramatiq worker</li>
+          <li>Redis</li>
+          <li>Postgres + pgvector</li>
+          <li>Mock LLM</li>
+          <li>Prometheus</li>
+          <li>Grafana</li>
+          <li>Toxiproxy</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Three-Layer Channel</h2>
+          <p>
+            The repo, site, and videos each have a separate job. Keeping that split clear prevents the
+            site from becoming the source of truth.
+          </p>
+        </div>
+
+        <div class="pillar-grid">
+          {
+            pillars.map((pillar) => (
+              <article class="card">
+                <h3>{pillar.title}</h3>
+                <p>{pillar.body}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

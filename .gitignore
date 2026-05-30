@@ -50,6 +50,7 @@ htmlcov/
 node_modules/
 .site/
 dist/
+site/.astro/
 
 # Temporary
 *.tmp
