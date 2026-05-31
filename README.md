@@ -49,6 +49,7 @@ Prerequisites:
 
 - Docker Desktop or Docker Engine with Compose
 - Python 3.11+
+- `uv` for Python environment and dependency installation
 - `make`
 
 Run the baseline lab:

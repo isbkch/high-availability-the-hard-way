@@ -17,6 +17,8 @@ def test_github_actions_workflow_runs_static_lab_contracts() -> None:
     required_snippets = [
         "name: Test labs",
         "python-version: '3.11'",
+        "uses: astral-sh/setup-uv@v5",
+        "uv pip install --system -r docuask/api/requirements.txt -r docuask/worker/requirements.txt pyyaml",
         "pyyaml",
         "python3 -m pytest docuask/tests tests labs/01-baseline-app/tests labs/02-timeouts/tests labs/03-retries-jitter/tests -q",
         "bash -n shared/scripts/*.sh labs/01-baseline-app/scripts/*.sh labs/02-timeouts/scripts/*.sh labs/03-retries-jitter/scripts/*.sh",
@@ -29,3 +31,5 @@ def test_github_actions_workflow_runs_static_lab_contracts() -> None:
 
     for snippet in required_snippets:
         assert snippet in workflow
+
+    assert "python -m pip install" not in workflow

@@ -105,4 +105,8 @@ def test_dashboard_and_dockerfiles_are_valid_lab_assets() -> None:
 
     assert "uvicorn" in api_dockerfile
     assert "docuask.api.main:app" in api_dockerfile
+    assert "uv pip install --system --no-cache" in api_dockerfile
+    assert "uv pip install --system --no-cache" in worker_dockerfile
+    assert "RUN pip install" not in api_dockerfile
+    assert "RUN pip install" not in worker_dockerfile
     assert 'CMD ["python", "-m", "docuask.worker.main"' in worker_dockerfile

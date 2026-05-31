@@ -7,10 +7,9 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
 setup: ## Set up development environment
-	python -m venv venv
-	./venv/bin/pip install --upgrade pip
-	./venv/bin/pip install -r docuask/api/requirements.txt
-	./venv/bin/pip install -r docuask/worker/requirements.txt
+	uv venv venv
+	uv pip install --python venv/bin/python -r docuask/api/requirements.txt
+	uv pip install --python venv/bin/python -r docuask/worker/requirements.txt
 
 test: ## Run all tests
 	./venv/bin/pytest -v
