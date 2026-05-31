@@ -5,19 +5,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../../shared/scripts/common.sh"
+LAB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 compose() {
     if docker compose version >/dev/null 2>&1; then
-        docker compose "$@"
+        docker compose -f "$LAB_DIR/docker-compose.yml" "$@"
     else
-        docker-compose "$@"
+        docker-compose -f "$LAB_DIR/docker-compose.yml" "$@"
     fi
 }
 
 log_info "Starting Lab 1: Baseline Application"
 check_docker
 
-cd "$SCRIPT_DIR/.."
+cd "$LAB_DIR"
 compose up -d --build
 
 wait_for_service localhost 8080 "DocuAsk API" 90

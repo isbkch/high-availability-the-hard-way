@@ -67,6 +67,13 @@ def test_scripts_source_common_with_lab_relative_path() -> None:
         if "compose()" in text:
             assert "docker compose" in text
             assert "docker-compose" in text
+            assert '-f "$LAB_DIR/docker-compose.yml"' in text
+
+
+def test_makefile_pins_lab_compose_file() -> None:
+    makefile = (LAB_DIR / "Makefile").read_text()
+
+    assert "-f docker-compose.yml" in makefile
 
 
 def test_startup_and_smoke_test_prove_worker_processing() -> None:

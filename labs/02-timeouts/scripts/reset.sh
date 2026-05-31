@@ -13,9 +13,9 @@ TOXIPROXY_URL="${TOXIPROXY_URL:-http://localhost:8474}"
 
 compose() {
     if docker compose version >/dev/null 2>&1; then
-        docker compose "$@"
+        docker compose -f "$LAB_DIR/docker-compose.yml" "$@"
     else
-        docker-compose "$@"
+        docker-compose -f "$LAB_DIR/docker-compose.yml" "$@"
     fi
 }
 

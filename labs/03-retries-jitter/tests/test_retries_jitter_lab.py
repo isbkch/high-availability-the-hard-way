@@ -89,6 +89,7 @@ def test_scripts_use_common_helpers_compose_fallback_and_failure_controls() -> N
         if "compose()" in text:
             assert "docker compose" in text
             assert "docker-compose" in text
+            assert '-f "$LAB_DIR/docker-compose.yml"' in text
 
     break_script = read("scripts/break.sh")
     reset_script = read("scripts/reset.sh")
@@ -106,6 +107,12 @@ def test_scripts_use_common_helpers_compose_fallback_and_failure_controls() -> N
     assert "failed_response_count" in load
     assert "http_code" in load
     assert "500|503" not in load
+
+
+def test_makefile_pins_lab_compose_file() -> None:
+    makefile = read("Makefile")
+
+    assert "-f docker-compose.yml" in makefile
 
 
 def test_smoke_and_load_tests_use_current_api_routes() -> None:

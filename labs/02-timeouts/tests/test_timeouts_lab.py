@@ -66,6 +66,7 @@ def test_scripts_use_real_toxiproxy_api_and_common_helpers() -> None:
         if "compose()" in text:
             assert "docker compose" in text
             assert "docker-compose" in text
+            assert '-f "$LAB_DIR/docker-compose.yml"' in text
 
     break_script = read("scripts/break.sh")
     reset_script = read("scripts/reset.sh")
@@ -75,6 +76,12 @@ def test_scripts_use_real_toxiproxy_api_and_common_helpers() -> None:
     assert "latency" in break_script
     assert "DELETE" in reset_script
     assert "/proxies/mock-llm/toxics/llm-latency" in reset_script
+
+
+def test_makefile_pins_lab_compose_file() -> None:
+    makefile = read("Makefile")
+
+    assert "-f docker-compose.yml" in makefile
 
 
 def test_smoke_and_load_tests_use_current_api_routes() -> None:

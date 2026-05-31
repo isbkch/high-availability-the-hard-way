@@ -5,19 +5,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../../shared/scripts/common.sh"
+LAB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 compose() {
     if docker compose version >/dev/null 2>&1; then
-        docker compose "$@"
+        docker compose -f "$LAB_DIR/docker-compose.yml" "$@"
     else
-        docker-compose "$@"
+        docker-compose -f "$LAB_DIR/docker-compose.yml" "$@"
     fi
 }
 
 log_info "Starting Lab 3: Retries and Jitter"
 check_docker
 
-cd "$SCRIPT_DIR/.."
+cd "$LAB_DIR"
 "$SCRIPT_DIR/reset.sh" --skip-compose
 compose up -d --build
 

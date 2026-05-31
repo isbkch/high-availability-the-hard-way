@@ -5,18 +5,19 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../../shared/scripts/common.sh"
+LAB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 compose() {
     if docker compose version >/dev/null 2>&1; then
-        docker compose "$@"
+        docker compose -f "$LAB_DIR/docker-compose.yml" "$@"
     else
-        docker-compose "$@"
+        docker-compose -f "$LAB_DIR/docker-compose.yml" "$@"
     fi
 }
 
 check_docker
 
-cd "$SCRIPT_DIR/.."
+cd "$LAB_DIR"
 log_info "Stopping Lab 1 and removing volumes"
 compose down -v --remove-orphans
 
