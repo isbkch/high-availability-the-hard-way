@@ -56,3 +56,6 @@ site/.astro/
 *.tmp
 *.bak
 TASKS-private.md
+docs/superpowers
+AGENTS.md
+CLAUDE.md
