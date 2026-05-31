@@ -52,6 +52,23 @@ Prerequisites:
 - `uv` for Python environment and dependency installation
 - `make`
 
+## Start Here From Video 1
+
+If you came from the first YouTube video, run the timeout lab first. It is the quickest way to see the core loop: start the app, inject a slow dependency, watch the failure, apply the fix, and prove the behavior changed.
+
+```bash
+git clone https://github.com/isbkch/high-availability-the-hard-way.git
+cd high-availability-the-hard-way
+cd labs/02-timeouts
+make up
+make smoke-test
+make break
+make load-test
+make apply-fix
+make load-test
+make reset
+```
+
 Run the baseline lab:
 
 ```bash
