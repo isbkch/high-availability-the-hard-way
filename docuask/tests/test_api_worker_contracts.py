@@ -15,10 +15,43 @@ def test_main_app_imports_with_expected_routes():
 
     routes = {route.path for route in app.routes}
 
+    assert "/" in routes
     assert "/api/health" in routes
     assert "/api/documents" in routes
     assert "/api/documents/{document_id}" in routes
     assert "/api/questions" in routes
+
+
+def test_root_serves_docuask_demo_ui():
+    """The root page should be a browser demo for launch recordings."""
+    from fastapi.testclient import TestClient
+
+    from docuask.api.main import app
+
+    response = TestClient(app).get("/")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "DocuAsk Reliability Lab" in response.text
+    assert 'id="document-form"' in response.text
+    assert 'id="question-form"' in response.text
+
+
+def test_demo_static_assets_reference_public_api_contracts():
+    """The browser demo should call the same API routes used in the labs."""
+    root = Path(__file__).resolve().parents[1]
+    static_dir = root / "api" / "static"
+
+    index = (static_dir / "index.html").read_text()
+    script = (static_dir / "app.js").read_text()
+    styles = (static_dir / "styles.css").read_text()
+
+    assert 'href="/static/styles.css"' in index
+    assert 'src="/static/app.js"' in index
+    assert '"/api/health"' in script
+    assert '"/api/documents"' in script
+    assert '"/api/questions"' in script
+    assert "DocuAsk" in styles
 
 
 def test_health_route_returns_lab_contract_status_values(monkeypatch):

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocuAsk Reliability Lab</title>
+    <meta
+      name="description"
+      content="A small browser demo for running DocuAsk reliability labs."
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="lab-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">High Availability The Hard Way</p>
+          <h1>DocuAsk Reliability Lab</h1>
+          <p class="lede">
+            Upload a document, ask a question, then use the lab scripts to break the LLM path and
+            watch the user flow change.
+          </p>
+        </div>
+        <div class="health-panel" aria-live="polite">
+          <span class="health-dot" id="overall-dot"></span>
+          <div>
+            <strong id="overall-status">Checking service...</strong>
+            <p id="health-details">Database, Redis, and LLM status will appear here.</p>
+          </div>
+          <button class="ghost-button" id="refresh-health" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="DocuAsk demo workflow">
+        <article class="panel document-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="step-label">Step 1</p>
+              <h2>Create or select a document</h2>
+            </div>
+            <button class="ghost-button" id="load-sample" type="button">Load Sample</button>
+          </div>
+
+          <form id="document-form">
+            <label for="document-title">Title</label>
+            <input
+              id="document-title"
+              name="title"
+              type="text"
+              value="Production Readiness Notes"
+              autocomplete="off"
+            />
+
+            <label for="document-file">Text file</label>
+            <input id="document-file" name="document-file" type="file" accept=".txt,.md,text/plain" />
+
+            <label for="document-content">Document content</label>
+            <textarea id="document-content" name="content" rows="9"></textarea>
+
+            <button class="primary-button" type="submit">Upload Document</button>
+          </form>
+
+          <div class="document-list" id="document-list" aria-live="polite"></div>
+        </article>
+
+        <article class="panel answer-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="step-label">Step 2</p>
+              <h2>Ask the app a question</h2>
+            </div>
+            <span class="selected-doc" id="selected-document">No document selected</span>
+          </div>
+
+          <form id="question-form">
+            <label for="question-input">Question</label>
+            <textarea id="question-input" name="question" rows="4">
+What reliability boundary keeps a slow dependency from holding the app hostage?</textarea
+            >
+            <button class="primary-button" type="submit">Ask Question</button>
+          </form>
+
+          <div class="answer-box" aria-live="polite">
+            <div class="answer-meta" id="answer-meta">Run the happy path, then inject a failure.</div>
+            <p id="answer-text">The answer will appear here.</p>
+            <div class="sources" id="sources"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="operator-strip" aria-label="Lab commands">
+        <div>
+          <p class="step-label">Recording path</p>
+          <code>cd labs/02-timeouts && make break && make load-test && make apply-fix</code>
+        </div>
+        <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+        <a href="http://localhost:3001" target="_blank" rel="noreferrer">Grafana</a>
+        <a href="http://localhost:9090" target="_blank" rel="noreferrer">Prometheus</a>
+      </section>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
