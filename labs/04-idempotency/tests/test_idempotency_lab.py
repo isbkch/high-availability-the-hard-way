@@ -140,3 +140,20 @@ def test_smoke_and_load_use_current_api_routes() -> None:
     for route in ("/api/health", "/api/documents"):
         assert route in smoke
     assert "/api/documents" in load
+
+
+def test_docs_describe_idempotency_lab() -> None:
+    readme = read("README.md")
+    architecture = read("architecture.md")
+    reflection = read("reflection.md")
+
+    assert "make break" in readme
+    assert "make apply-fix" in readme
+    assert "Idempotency-Key" in readme
+    assert "Idempotency-Key" in architecture
+    assert "on_conflict" in architecture or "ON CONFLICT" in architecture
+    assert "Root Cause" in reflection
+    assert "Production Checklist" in reflection
+    assert "Before" in reflection
+    assert "After" in reflection
+    assert "idempotency" in reflection.lower()
