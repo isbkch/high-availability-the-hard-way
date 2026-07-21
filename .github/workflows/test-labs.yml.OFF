@@ -29,11 +29,11 @@ jobs:
 
       - name: Run unit and static contract tests
         run: |
-          python3 -m pytest docuask/tests tests labs/01-baseline-app/tests labs/02-timeouts/tests labs/03-retries-jitter/tests -q
+          python3 -m pytest docuask/tests tests labs/01-baseline-app/tests labs/02-timeouts/tests labs/03-retries-jitter/tests labs/04-idempotency/tests -q
 
       - name: Check shell script syntax
         run: |
-          bash -n shared/scripts/*.sh labs/01-baseline-app/scripts/*.sh labs/02-timeouts/scripts/*.sh labs/03-retries-jitter/scripts/*.sh
+          bash -n shared/scripts/*.sh labs/01-baseline-app/scripts/*.sh labs/02-timeouts/scripts/*.sh labs/03-retries-jitter/scripts/*.sh labs/04-idempotency/scripts/*.sh
 
       - name: Validate Docker Compose configs
         run: |
@@ -41,6 +41,7 @@ jobs:
           docker compose -f labs/01-baseline-app/docker-compose.yml config --quiet
           docker compose -f labs/02-timeouts/docker-compose.yml config --quiet
           docker compose -f labs/03-retries-jitter/docker-compose.yml config --quiet
+          docker compose -f labs/04-idempotency/docker-compose.yml config --quiet
 
       - name: Check whitespace
         run: |

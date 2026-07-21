@@ -40,8 +40,9 @@ The app is intentionally small, but the reliability problems are real enough to 
 | 1 | Baseline App | No injected failure | Learn the stack, API routes, worker path, and dashboards | `labs/01-baseline-app` |
 | 2 | Timeouts | Slow dependency calls pin requests and jobs | Explicit `httpx.Timeout` budgets in API and worker code | `labs/02-timeouts` |
 | 3 | Retries + Jitter | Transient LLM 503s trigger immediate retry storms | Bounded retries with retryable statuses, exponential backoff, and jitter | `labs/03-retries-jitter` |
+| 4 | Idempotency | Retried writes create duplicate documents and duplicate work | Client `Idempotency-Key` + Postgres dedupe table with a unique constraint | `labs/04-idempotency` |
 
-Future labs are intended to cover circuit breakers, queue backpressure, idempotency, health checks, and observability.
+Future labs are intended to cover circuit breakers, queue backpressure, health checks, and observability.
 
 ## Quick Start
 
