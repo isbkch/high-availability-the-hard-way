@@ -101,3 +101,42 @@ def test_makefile_pins_lab_compose_file() -> None:
 def test_dashboard_titled_for_lab_4() -> None:
     dashboard = json.loads(read("dashboards/grafana-dashboard.json"))
     assert dashboard["title"] == "DocuAsk Lab 4 - Idempotency"
+
+
+def test_scripts_use_common_helpers_and_compose_fallback() -> None:
+    for script in (LAB_DIR / "scripts").glob("*.sh"):
+        text = script.read_text()
+        assert "../../../shared/scripts/common.sh" in text
+        if "compose()" in text:
+            assert "docker compose" in text
+            assert "docker-compose" in text
+            assert '-f "$LAB_DIR/docker-compose.yml"' in text
+
+
+def test_apply_fix_and_reset_swap_the_document_route() -> None:
+    apply_fix = read("scripts/apply-fix.sh")
+    reset = read("scripts/reset.sh")
+
+    assert "after/docuask/api/routes/documents.py" in apply_fix
+    assert "before/docuask/api/routes/documents.py" in reset
+    assert "TRUNCATE" in reset
+    assert "idempotency_keys" in reset
+
+
+def test_break_resets_mock_and_load_test_counts_distinct_ids() -> None:
+    break_script = read("scripts/break.sh")
+    load = read("scripts/load-test.sh")
+
+    assert "/control/reset" in break_script
+    assert "Idempotency-Key" in load
+    assert "/mock-state" in load
+    assert "distinct" in load
+
+
+def test_smoke_and_load_use_current_api_routes() -> None:
+    smoke = read("scripts/smoke-test.sh")
+    load = read("scripts/load-test.sh")
+
+    for route in ("/api/health", "/api/documents"):
+        assert route in smoke
+    assert "/api/documents" in load
