@@ -91,3 +91,22 @@ class DocumentChunk(Base):
     def __repr__(self) -> str:
         """Return a compact debug representation."""
         return f"<DocumentChunk {self.id} for document {self.document_id}>"
+
+
+class IdempotencyKey(Base):
+    """Dedupe record mapping an Idempotency-Key to the resource it created."""
+
+    __tablename__ = "idempotency_keys"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    document_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        """Return a compact debug representation."""
+        return f"<IdempotencyKey {self.key} -> document {self.document_id}>"
