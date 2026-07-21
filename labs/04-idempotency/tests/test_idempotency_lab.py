@@ -157,3 +157,16 @@ def test_docs_describe_idempotency_lab() -> None:
     assert "Before" in reflection
     assert "After" in reflection
     assert "idempotency" in reflection.lower()
+
+
+def test_runtime_pytests_exist_for_before_and_after() -> None:
+    before_test = read("tests/test_failure_before.py")
+    after_test = read("tests/test_resilience_after.py")
+
+    assert "RUN_LAB_RUNTIME_TESTS" in before_test
+    assert "Idempotency-Key" in before_test
+    assert "/api/documents" in before_test
+    assert "RUN_LAB_RUNTIME_TESTS" in after_test
+    assert "Idempotency-Key" in after_test
+    assert "Idempotent-Replay" in after_test
+    assert "409" in after_test
