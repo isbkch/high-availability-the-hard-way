@@ -79,3 +79,25 @@ def test_mock_llm_reset_zeroes_the_counter() -> None:
     server.reset_state()
     assert server.snapshot_state()["request_counter"] == 0
     assert server.snapshot_state()["embedding_requests"] == 0
+
+
+def test_compose_mounts_shared_docuask_and_has_no_toxiproxy() -> None:
+    compose = yaml.safe_load(read("docker-compose.yml"))
+    services = compose["services"]
+
+    assert "toxiproxy" not in services
+    assert services["api"]["environment"]["LLM_API_BASE"] == "http://mock-llm:8888/v1"
+    assert services["worker"]["environment"]["LLM_API_BASE"] == "http://mock-llm:8888/v1"
+    assert "../../docuask:/app/docuask" in services["api"]["volumes"]
+    assert "../../docuask:/app/docuask" in services["worker"]["volumes"]
+    assert "./mock-llm:/app" in services["mock-llm"]["volumes"]
+
+
+def test_makefile_pins_lab_compose_file() -> None:
+    makefile = read("Makefile")
+    assert "-f docker-compose.yml" in makefile
+
+
+def test_dashboard_titled_for_lab_4() -> None:
+    dashboard = json.loads(read("dashboards/grafana-dashboard.json"))
+    assert dashboard["title"] == "DocuAsk Lab 4 - Idempotency"

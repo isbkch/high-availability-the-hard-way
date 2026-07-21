@@ -1,0 +1,44 @@
+{
+  "title": "DocuAsk Lab 4 - Idempotency",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "API Health Probe",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "probe_success{instance=\"http://api:8080/api/health\"}",
+          "legendFormat": "api"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Mock LLM Health Probe",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {
+          "expr": "probe_success{instance=\"http://mock-llm:8888/v1/models\"}",
+          "legendFormat": "mock-llm"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Dependency Probe Duration",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "targets": [
+        {
+          "expr": "probe_duration_seconds{lab=\"idempotency\"}",
+          "legendFormat": "{{ instance }}"
+        }
+      ]
+    }
+  ]
+}
