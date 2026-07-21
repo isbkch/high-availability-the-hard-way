@@ -55,3 +55,27 @@ def test_after_route_uses_idempotency_key_and_dedupe_table() -> None:
     assert 'response.headers["Idempotent-Replay"] = "true"' in after
     assert "status.HTTP_409_CONFLICT" in after
     assert "status.HTTP_200_OK" in after
+
+
+def test_mock_llm_counts_requests_and_supports_reset() -> None:
+    server = read("mock-llm/server.py")
+
+    assert "/v1/models" in server
+    assert "/v1/embeddings" in server
+    assert "/v1/chat/completions" in server
+    assert "/mock-state" in server
+    assert "/control/reset" in server
+    assert "request_counter" in server
+
+
+def test_mock_llm_reset_zeroes_the_counter() -> None:
+    server = load_mock_server()
+
+    server.reset_state()
+    server.bump("embedding_requests")
+    server.bump("chat_requests")
+    assert server.snapshot_state()["request_counter"] == 2
+
+    server.reset_state()
+    assert server.snapshot_state()["request_counter"] == 0
+    assert server.snapshot_state()["embedding_requests"] == 0
